@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>教師課堂安排查詢系統</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+HK:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+<style>
+:root, [data-theme="light"]{
+  --color-bg:#f7f6f2; --color-surface:#f9f8f5; --color-surface-2:#fbfbf9;
+  --color-surface-offset:#f3f0ec; --color-surface-offset-2:#edeae5;
+  --color-divider:#dcd9d5; --color-border:#d4d1ca;
+  --color-text:#28251d; --color-text-muted:#7a7974; --color-text-faint:#bab9b4; --color-text-inverse:#f9f8f4;
+  --color-primary:#01696f; --color-primary-hover:#0c4e54; --color-primary-active:#0f3638; --color-primary-highlight:#cedcd8;
+  --color-success:#437a22; --color-success-highlight:#d4dfcc;
+  --color-purple:#7a39bb; --color-purple-highlight:#dacfde;
+  --color-error:#a12c7b; --color-error-highlight:#e0ced7;
+  --radius-sm:.375rem; --radius-md:.5rem; --radius-lg:.75rem; --radius-xl:1rem; --radius-full:9999px;
+  --transition-interactive:180ms cubic-bezier(.16,1,.3,1);
+  --shadow-sm:0 1px 2px oklch(.2 .01 80/.06); --shadow-md:0 4px 12px oklch(.2 .01 80/.08); --shadow-lg:0 12px 32px oklch(.2 .01 80/.12);
+}
+[data-theme="dark"]{
+  --color-bg:#171614; --color-surface:#1c1b19; --color-surface-2:#201f1d;
+  --color-surface-offset:#1d1c1a; --color-surface-offset-2:#22211f;
+  --color-divider:#262523; --color-border:#393836;
+  --color-text:#cdccca; --color-text-muted:#797876; --color-text-faint:#5a5957; --color-text-inverse:#2b2a28;
+  --color-primary:#4f98a3; --color-primary-hover:#227f8b; --color-primary-active:#1a626b; --color-primary-highlight:#313b3b;
+  --color-success:#6daa45; --color-success-highlight:#3a4435;
+  --color-purple:#a86fdf; --color-purple-highlight:#4e4652;
+  --color-error:#d163a7; --color-error-highlight:#4c3d46;
+  --shadow-sm:0 1px 2px oklch(0 0 0/.2); --shadow-md:0 4px 12px oklch(0 0 0/.3); --shadow-lg:0 12px 32px oklch(0 0 0/.4);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:none;scroll-behavior:smooth}
+body{min-height:100dvh;line-height:1.6;font-family:'Noto Sans HK',sans-serif;font-size:16px;color:var(--color-text);background:var(--color-bg);transition:background var(--transition-interactive)}
+::selection{background:oklch(from var(--color-primary) l c h/.25)}
+:focus-visible{outline:2px solid var(--color-primary);outline-offset:2px;border-radius:var(--radius-sm)}
+button{font:inherit;cursor:pointer;background:none;border:none;color:inherit}
+input,select{font:inherit;color:inherit}
+
+.banner{background:linear-gradient(135deg,var(--color-primary-active),var(--color-primary));color:#fff;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shadow-md)}
+.banner h1{font-size:clamp(18px,3vw,24px);font-weight:900;display:flex;align-items:center;gap:10px}
+.theme-toggle{width:38px;height:38px;border-radius:var(--radius-full);background:oklch(1 0 0/.15);display:flex;align-items:center;justify-content:center;transition:background var(--transition-interactive)}
+.theme-toggle:hover{background:oklch(1 0 0/.25)}
+
+.container{max-width:1080px;margin:0 auto;padding:24px 16px 64px}
+
+.card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);margin-bottom:20px;overflow:hidden}
+.card-header{padding:14px 20px;border-bottom:1px solid var(--color-divider);font-weight:700;font-size:15px;color:var(--color-primary);display:flex;align-items:center;gap:8px}
+.card-body{padding:18px 20px}
+
+.dropzone{border:2px dashed var(--color-border);border-radius:var(--radius-md);padding:28px 16px;text-align:center;cursor:pointer;transition:border-color var(--transition-interactive),background var(--transition-interactive)}
+.dropzone:hover,.dropzone.drag{border-color:var(--color-primary);background:var(--color-primary-highlight)}
+.dropzone p{color:var(--color-text-muted);font-size:14px;margin-top:6px}
+.file-status{margin-top:12px;font-size:14px;color:var(--color-text-muted)}
+.file-status.ok{color:var(--color-success)}
+
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--color-divider);margin-bottom:18px}
+.tab-btn{padding:10px 18px;font-weight:700;font-size:14px;color:var(--color-text-muted);border-bottom:2px solid transparent;transition:color var(--transition-interactive),border-color var(--transition-interactive)}
+.tab-btn.active{color:var(--color-primary);border-color:var(--color-primary)}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+.search-input{width:100%;padding:9px 12px;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface-2);font-size:14px;margin-bottom:10px}
+.search-input:focus{border-color:var(--color-primary)}
+
+.picker{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:stretch}
+@media (max-width:640px){.picker{grid-template-columns:1fr}}
+.list-box{border:1px solid var(--color-border);border-radius:var(--radius-md);height:220px;overflow-y:auto;background:var(--color-surface-2)}
+.list-box .item{padding:8px 12px;font-size:14px;cursor:pointer;border-bottom:1px solid var(--color-divider);transition:background var(--transition-interactive)}
+.list-box .item:hover{background:var(--color-primary-highlight)}
+.list-box .item.sel{background:var(--color-primary);color:#fff}
+.list-label{font-size:12px;font-weight:700;color:var(--color-text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.03em}
+.mid-btns{display:flex;flex-direction:column;justify-content:center;gap:8px}
+.icon-btn{width:38px;height:38px;border-radius:var(--radius-md);background:var(--color-surface-offset);border:1px solid var(--color-border);display:flex;align-items:center;justify-content:center;transition:background var(--transition-interactive)}
+.icon-btn:hover{background:var(--color-primary-highlight)}
+
+.opts-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:16px}
+.checkbox-row{display:flex;align-items:center;gap:8px;font-size:14px}
+.checkbox-row input{width:18px;height:18px;accent-color:var(--color-primary)}
+
+.btn{padding:10px 20px;border-radius:var(--radius-md);font-weight:700;font-size:14px;transition:background var(--transition-interactive),transform var(--transition-interactive)}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--color-primary);color:#fff}
+.btn-primary:hover{background:var(--color-primary-hover)}
+.btn-purple{background:var(--color-purple);color:#fff}
+.btn-purple:hover{filter:brightness(.9)}
+.btn-ghost{background:var(--color-surface-offset);color:var(--color-text);border:1px solid var(--color-border)}
+.btn-ghost:hover{background:var(--color-surface-offset-2)}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+
+.result-meta{font-size:13px;color:var(--color-text-muted);margin-bottom:14px;display:flex;flex-wrap:wrap;gap:16px}
+.result-meta b{color:var(--color-text)}
+
+.day-block{border:1px solid var(--color-divider);border-radius:var(--radius-md);margin-bottom:10px;overflow:hidden}
+.day-head{background:var(--color-surface-offset);padding:8px 14px;font-weight:700;font-size:13px;color:var(--color-primary)}
+.slot-row{display:flex;justify-content:space-between;gap:10px;padding:8px 14px;font-size:13px;border-top:1px solid var(--color-divider)}
+.slot-row .tag{color:var(--color-success);font-weight:600}
+.slot-row .obs-tag{color:var(--color-purple);font-weight:700}
+.empty-row{padding:10px 14px;font-size:13px;color:var(--color-text-faint)}
+
+.footer-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+.hint{font-size:12px;color:var(--color-text-faint);margin-top:8px}
+select.observed-select{width:100%;max-width:320px;padding:9px 12px;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface-2);font-size:14px}
+</style>
+</head>
+<body>
+<div class="banner">
+  <h1>📅 教師課堂安排查詢系統（網頁版）</h1>
+  <button class="theme-toggle" id="themeToggle" aria-label="切換深色模式">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+  </button>
+</div>
+
+<div class="container">
+
+  <div class="card">
+    <div class="card-header">Step 1 — 載入時間表 Excel 檔案</div>
+    <div class="card-body">
+      <div class="dropzone" id="dropzone">
+        <div>📂 點擊選取，或將 .xlsx 檔案拖放到這裡</div>
+        <p>檔案不會上傳到任何伺服器，全部在你的瀏覽器內處理</p>
+        <input type="file" id="fileInput" accept=".xlsx,.xls" class="sr-only">
+      </div>
+      <div class="file-status" id="fileStatus">尚未選取檔案</div>
+    </div>
+  </div>
+
+  <div class="card" id="mainCard" style="display:none">
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="cf">📋 共同空堂查詢</button>
+      <button class="tab-btn" data-tab="ob">👁 觀課安排</button>
+    </div>
+    <div class="card-body">
+
+      <!-- Tab: Common free -->
+      <div class="tab-panel active" id="tab-cf">
+        <div class="list-label">Step 2 — 選取老師</div>
+        <input class="search-input" id="cfSearch" placeholder="🔍 搜尋老師簡稱或姓名">
+        <div class="picker">
+          <div>
+            <div class="list-label">可選老師</div>
+            <div class="list-box" id="cfAll"></div>
+          </div>
+          <div class="mid-btns">
+            <button class="icon-btn" id="cfAdd" title="加入" aria-label="加入">→</button>
+            <button class="icon-btn" id="cfRemove" title="移除" aria-label="移除">←</button>
+            <button class="icon-btn" id="cfClear" title="全部移除" aria-label="全部移除">✕</button>
+          </div>
+          <div>
+            <div class="list-label">已選老師</div>
+            <div class="list-box" id="cfSel"></div>
+          </div>
+        </div>
+        <div class="opts-row">
+          <label class="checkbox-row"><input type="checkbox" id="cfS6" checked> 包括中六課堂（取消勾選＝中六課堂視作空堂）</label>
+          <button class="btn btn-primary" id="cfQuery">🔍 查詢共同空堂</button>
+        </div>
+        <div class="card" style="margin-top:18px" id="cfResultCard" hidden>
+          <div class="card-header">查詢結果</div>
+          <div class="card-body">
+            <div class="result-meta" id="cfMeta"></div>
+            <div id="cfResults"></div>
+            <div class="footer-actions">
+              <button class="btn btn-ghost" id="cfExport">💾 匯出 Excel 報表</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Observation -->
+      <div class="tab-panel" id="tab-ob">
+        <div class="picker" style="grid-template-columns:1fr 1fr">
+          <div>
+            <div class="list-label" style="color:var(--color-success)">👤 觀課老師（空堂，可選多位）</div>
+            <input class="search-input" id="obSearch" placeholder="🔍 搜尋">
+            <div class="picker" style="grid-template-columns:1fr auto 1fr">
+              <div class="list-box" id="obAll"></div>
+              <div class="mid-btns">
+                <button class="icon-btn" id="obAdd" aria-label="加入">→</button>
+                <button class="icon-btn" id="obRemove" aria-label="移除">←</button>
+                <button class="icon-btn" id="obClear" aria-label="全部移除">✕</button>
+              </div>
+              <div class="list-box" id="obSel"></div>
+            </div>
+          </div>
+          <div>
+            <div class="list-label" style="color:var(--color-purple)">🎓 被觀課老師（上課，選一位）</div>
+            <select class="observed-select" id="obObserved"><option value="">請選擇</option></select>
+            <p class="hint">系統會找出所有觀課老師「同時空堂」，而被觀課老師正在「上課」的時段。</p>
+          </div>
+        </div>
+        <div class="opts-row">
+          <label class="checkbox-row"><input type="checkbox" id="obS6" checked> 包括中六課堂（取消勾選＝中六課堂視作空堂）</label>
+          <button class="btn btn-purple" id="obQuery">👁 查詢可觀課時段</button>
+        </div>
+        <div class="card" style="margin-top:18px" id="obResultCard" hidden>
+          <div class="card-header">查詢結果</div>
+          <div class="card-body">
+            <div class="result-meta" id="obMeta"></div>
+            <div id="obResults"></div>
+            <div class="footer-actions">
+              <button class="btn btn-ghost" id="obExport">💾 匯出 Excel 報表</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  var t=document.getElementById('themeToggle'), r=document.documentElement;
+  var d = matchMedia('(prefers-color-scheme:dark)').matches ? 'dark':'light';
+  r.setAttribute('data-theme', d);
+  t.addEventListener('click', function(){
+    d = d==='dark' ? 'light':'dark';
+    r.setAttribute('data-theme', d);
+  });
+})();
+
+/* ============================================================
+   Core parsing logic — ported from the Python desktop version
+   ============================================================ */
+const PERIOD_TIMES = {1:"08:30-09:10",2:"09:10-09:50",3:"10:05-10:45",4:"10:45-11:25",
+  5:"11:40-12:20",6:"12:20-13:00",7:"14:20-15:00",8:"15:00-15:40"};
+const ALL_TIME_KEYS = new Set(["08:00-08:30","08:30-09:10","09:10-09:50","09:50-10:05",
+  "10:05-10:45","10:45-11:25","11:25-11:40","11:40-12:20","12:20-13:00","13:00-14:15",
+  "14:15-14:20","14:20-15:00","15:00-15:40"]);
+const TEACHING_KEYS = new Map([["08:30-09:10",1],["09:10-09:50",2],["10:05-10:45",3],
+  ["10:45-11:25",4],["11:40-12:20",5],["12:20-13:00",6],["14:20-15:00",7],["15:00-15:40",8]]);
+const S6_RE = /6[ABCD]/i;
+const DAY_CH_RE = /第\s*([1-7])\s*日/;
+const DAY_EN_RE = /^([1-7])$/;
+const DAY_WORD_RE = /^Day\s*([1-7])$/i;
+const DAY_NUMS = [1,2,3,4,5,6,7];
+
+// Colours ported 1:1 from the Python desktop version (openpyxl hex codes)
+const XL_TITLE_BG = "1A3C5E";
+const XL_HEADER_BG = "2C7BE5";
+const XL_OBS_BG = "7D3C98";
+const XL_DAY_BG = "D6E4F7";
+const XL_ALT_BG = "EAF2FB";
+const XL_OBS_ROW = "F5EEF8";
+const XL_OBS_ALT = "EBD5F5";
+const XL_BORDER = "AAAAAA";
+
+function norm(x){
+  if(x===null||x===undefined) return "";
+  return String(x).replace(/\u3000/g," ").replace(/\xa0/g," ").replace(/\n/g,"-").trim();
+}
+function isS6(text){ return S6_RE.test(String(text).replace(/\s/g,"")); }
+function normaliseTime(raw){
+  let t = String(raw==null?"":raw).replace(/\n/g,"").replace(/\s/g,"").trim();
+  let m = t.match(/^(\d{2}:\d{2})[-\u2013\u2014](\d{2}:\d{2})$/);
+  if(m) return m[1]+"-"+m[2];
+  m = t.match(/^(\d{4})[-\u2013\u2014](\d{4})$/);
+  if(m){ let a=m[1], b=m[2]; return a.slice(0,2)+":"+a.slice(2)+"-"+b.slice(0,2)+":"+b.slice(2); }
+  return "";
+}
+function findStructure(rows){
+  const nrows = rows.length;
+  let ncols = 0; rows.forEach(r=>{ if(r.length>ncols) ncols=r.length; });
+  let timeCol=null, best=0, dayCols={};
+  for(let c=0;c<Math.min(ncols,8);c++){
+    let count=0;
+    for(let rr=0; rr<nrows; rr++){ if(ALL_TIME_KEYS.has(normaliseTime(rows[rr][c]))) count++; }
+    if(count>best){ best=count; timeCol=c; }
+  }
+  for(let rr=0; rr<Math.min(nrows,15); rr++){
+    let hits={};
+    for(let c=0;c<Math.min(ncols,12);c++){
+      let v = norm(rows[rr][c]);
+      let m = DAY_CH_RE.exec(v);
+      if(!m) m = DAY_EN_RE.exec(v);
+      if(!m) m = DAY_WORD_RE.exec(v);
+      if(m) hits[parseInt(m[1],10)] = c;
+    }
+    if(Object.keys(hits).length>=5){ dayCols=hits; break; }
+  }
+  return {timeCol, dayCols};
+}
+function detectTeacherName(rows, sheetName){
+  sheetName = String(sheetName).trim();
+  if(/^[A-Za-z0-9]+$/.test(sheetName)) return sheetName.toUpperCase();
+  if(/[\u4e00-\u9fff]/.test(sheetName)) return sheetName;
+  const skip = new Set(["nan","","1","2","3","4","5","6","7"]);
+  const nrows = rows.length;
+  let ncols = 0; rows.forEach(rw=>{ if(rw.length>ncols) ncols=rw.length; });
+  for(let r=0;r<Math.min(nrows,8);r++){
+    for(let c=0;c<Math.min(ncols,10);c++){
+      let v = norm(rows[r][c]);
+      if(v && !skip.has(v) && !/^[\d\s\-\u2013\u2014:]+$/.test(v) && v.length<=60 && /[a-zA-Z]/.test(v)){
+        return v;
+      }
+    }
+  }
+  return sheetName;
+}
+function parseWorkbook(wb){
+  const teachers = {};
+  wb.SheetNames.forEach(function(sheetName){
+    const ws = wb.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:false, defval:""});
+    const teacher = detectTeacherName(rows, sheetName);
+    const {timeCol, dayCols} = findStructure(rows);
+    if(timeCol===null || Object.keys(dayCols).length===0) return;
+    const slots=[];
+    for(let r=0;r<rows.length;r++){
+      const key = normaliseTime(rows[r][timeCol]);
+      if(!TEACHING_KEYS.has(key)) continue;
+      const period = TEACHING_KEYS.get(key);
+      DAY_NUMS.forEach(function(day){
+        const col = dayCols[day];
+        const cell = (col!==undefined && rows[r][col]!==undefined) ? norm(rows[r][col]) : "";
+        slots.push({day, period, time:PERIOD_TIMES[period], cell});
+      });
+    }
+    if(slots.length) teachers[teacher] = slots;
+  });
+  return teachers;
+}
+function freeSlots(slots, includeS6){
+  const out = new Set();
+  slots.forEach(function(row){
+    const isFree = includeS6 ? (row.cell==="") : (row.cell==="" || isS6(row.cell));
+    if(isFree) out.add(row.day+"|"+row.period+"|"+row.time);
+  });
+  return out;
+}
+function teachingSlots(slots, includeS6){
+  const out = new Map();
+  slots.forEach(function(row){
+    if(includeS6){
+      if(row.cell!=="") out.set(row.day+"|"+row.period+"|"+row.time, row.cell);
+    } else {
+      if(row.cell!=="" && !isS6(row.cell)) out.set(row.day+"|"+row.period+"|"+row.time, row.cell);
+    }
+  });
+  return out;
+}
+function intersectSets(sets){
+  if(!sets.length) return new Set();
+  let result = new Set(sets[0]);
+  for(let i=1;i<sets.length;i++){
+    const s = sets[i];
+    result = new Set([...result].filter(x=>s.has(x)));
+  }
+  return result;
+}
+function findCommonFree(teachersData, names, includeS6){
+  const missing = names.filter(n=>!(n in teachersData));
+  if(missing.length) throw new Error("找不到教師："+missing.join("、"));
+  const sets = names.map(n=>freeSlots(teachersData[n], includeS6));
+  const inter = intersectSets(sets);
+  return [...inter].map(k=>{ const [day,period,time]=k.split("|"); return {day:+day, period:+period, time}; })
+    .sort((a,b)=> a.day-b.day || a.period-b.period);
+}
+function findObservationSlots(teachersData, observers, observed, includeS6){
+  const missingObs = observers.filter(o=>!(o in teachersData));
+  if(missingObs.length) throw new Error("找不到觀課老師："+missingObs.join("、"));
+  if(!(observed in teachersData)) throw new Error("找不到被觀課老師："+observed);
+  const obsFreeSets = observers.map(o=>freeSlots(teachersData[o], includeS6));
+  const allObsFree = intersectSets(obsFreeSets);
+  const targetTeach = teachingSlots(teachersData[observed], includeS6);
+  const result = [];
+  targetTeach.forEach(function(classInfo, key){
+    if(allObsFree.has(key)){
+      const [day,period,time] = key.split("|");
+      result.push({day:+day, period:+period, time, classInfo});
+    }
+  });
+  return result.sort((a,b)=> a.day-b.day || a.period-b.period);
+}
+
+/* ============================================================
+   Excel export — ExcelJS, styled to match the Python desktop
+   version's openpyxl output exactly (colours, fonts, borders,
+   merged cells, row heights, column widths, freeze panes).
+   ============================================================ */
+function argb(hex){ return "FF" + hex.toUpperCase(); }
+function borderAll(){
+  const side = {style:'thin', color:{argb:argb(XL_BORDER)}};
+  return {top:side, left:side, right:side, bottom:side};
+}
+function fillSolid(hex){ return {type:'pattern', pattern:'solid', fgColor:{argb:argb(hex)}}; }
+async function saveWorkbook(wb, fileName){
+  const buf = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buf], {type:'application/octet-stream'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+}
+
+async function exportCommonExcel(result){
+  const {selected, common, s6} = result;
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('共同空堂');
+
+  ws.mergeCells('A1:D1');
+  const title = ws.getCell('A1');
+  title.value = '教師共同空堂分析報告';
+  title.font = {name:'Arial', size:14, bold:true, color:{argb:'FFFFFFFF'}};
+  title.fill = fillSolid(XL_TITLE_BG);
+  title.alignment = {horizontal:'center', vertical:'middle'};
+  ws.getRow(1).height = 32;
+
+  const meta = [
+    ['已選教師', selected.join('、')],
+    ['包括中六課堂', s6 ? '是' : '否'],
+    ['共同空堂總數', `${common.length} 節`]
+  ];
+  meta.forEach(([k,v], idx)=>{
+    const i = idx + 2;
+    ws.mergeCells(`A${i}:B${i}`);
+    ws.mergeCells(`C${i}:D${i}`);
+    const kc = ws.getCell(`A${i}`), vc = ws.getCell(`C${i}`);
+    kc.value = k; vc.value = v;
+    [kc, vc].forEach((cell, ci)=>{
+      cell.font = {name:'Arial', size:10, bold: ci===0};
+      cell.fill = fillSolid(XL_ALT_BG);
+      cell.alignment = {horizontal:'left', vertical:'middle', wrapText:true};
+      cell.border = borderAll();
+    });
+    ws.getRow(i).height = 18;
+  });
+
+  const sep = meta.length + 2;
+  ws.getRow(sep).height = 6;
+  const hdr = sep + 1;
+  const headers = [['循環日',14],['節次',10],['時間',18],['備註',20]];
+  headers.forEach(([h,w], idx)=>{
+    const ci = idx + 1;
+    const cell = ws.getCell(hdr, ci);
+    cell.value = h;
+    cell.font = {name:'Arial', size:11, bold:true, color:{argb:'FFFFFFFF'}};
+    cell.fill = fillSolid(XL_HEADER_BG);
+    cell.alignment = {horizontal:'center', vertical:'middle'};
+    cell.border = borderAll();
+    ws.getColumn(ci).width = w;
+  });
+  ws.getRow(hdr).height = 24;
+
+  let dr = hdr + 1;
+  DAY_NUMS.forEach(day=>{
+    const periods = common.filter(s=>s.day===day);
+    if(!periods.length){
+      const vals = [`Day ${day}`, '－', '－', '無共同空堂'];
+      vals.forEach((val, idx)=>{
+        const cell = ws.getCell(dr, idx+1);
+        cell.value = val;
+        cell.font = {name:'Arial', size:10, color:{argb:'FF999999'}};
+        cell.fill = fillSolid('FFFFFF');
+        cell.alignment = {horizontal:'center', vertical:'middle'};
+        cell.border = borderAll();
+      });
+      ws.getRow(dr).height = 18;
+      dr += 1;
+    } else {
+      const start = dr;
+      periods.forEach((s, pi)=>{
+        const bg = pi % 2 === 0 ? XL_DAY_BG : XL_ALT_BG;
+        const vals = [pi===0 ? `Day ${day}` : '', `第 ${s.period} 節`, s.time, ''];
+        vals.forEach((val, ci)=>{
+          const cell = ws.getCell(dr, ci+1);
+          cell.value = val;
+          cell.font = {name:'Arial', size:10};
+          cell.fill = fillSolid(ci===0 ? XL_DAY_BG : bg);
+          cell.alignment = {horizontal:'center', vertical:'middle'};
+          cell.border = borderAll();
+        });
+        ws.getRow(dr).height = 18;
+        dr += 1;
+      });
+      if(periods.length > 1){
+        ws.mergeCells(start, 1, dr-1, 1);
+        ws.getCell(start,1).alignment = {horizontal:'center', vertical:'middle'};
+      }
+    }
+  });
+  ws.views = [{state:'frozen', ySplit: hdr}];
+  await saveWorkbook(wb, `教師共同空堂_${selected.join('_')}.xlsx`);
+}
+
+async function exportObservationExcel(result){
+  const {observers, observed, slots, s6} = result;
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('觀課安排');
+
+  ws.mergeCells('A1:E1');
+  const title = ws.getCell('A1');
+  title.value = '校內觀課安排建議';
+  title.font = {name:'Arial', size:14, bold:true, color:{argb:'FFFFFFFF'}};
+  title.fill = fillSolid(XL_OBS_BG);
+  title.alignment = {horizontal:'center', vertical:'middle'};
+  ws.getRow(1).height = 32;
+
+  const meta = [
+    ['觀課老師（空堂）', observers.join('、')],
+    ['被觀課老師（上課）', observed],
+    ['包括中六課堂', s6 ? '是' : '否'],
+    ['可觀課節數', `${slots.length} 節`]
+  ];
+  meta.forEach(([k,v], idx)=>{
+    const i = idx + 2;
+    ws.mergeCells(`A${i}:B${i}`);
+    ws.mergeCells(`C${i}:E${i}`);
+    const kc = ws.getCell(`A${i}`), vc = ws.getCell(`C${i}`);
+    kc.value = k; vc.value = v;
+    [kc, vc].forEach((cell, ci)=>{
+      cell.font = {name:'Arial', size:10, bold: ci===0};
+      cell.fill = fillSolid(XL_OBS_ALT);
+      cell.alignment = {horizontal:'left', vertical:'middle', wrapText:true};
+      cell.border = borderAll();
+    });
+    ws.getRow(i).height = 18;
+  });
+
+  const sep = meta.length + 2;
+  ws.getRow(sep).height = 6;
+  const hdr = sep + 1;
+  const cols = [['循環日',12],['節次',10],['時間',18],['被觀課班別/科目',28],['備註',18]];
+  cols.forEach(([h,w], idx)=>{
+    const ci = idx + 1;
+    const cell = ws.getCell(hdr, ci);
+    cell.value = h;
+    cell.font = {name:'Arial', size:11, bold:true, color:{argb:'FFFFFFFF'}};
+    cell.fill = fillSolid(XL_OBS_BG);
+    cell.alignment = {horizontal:'center', vertical:'middle'};
+    cell.border = borderAll();
+    ws.getColumn(ci).width = w;
+  });
+  ws.getRow(hdr).height = 24;
+
+  let dr = hdr + 1;
+  DAY_NUMS.forEach(day=>{
+    const items = slots.filter(s=>s.day===day);
+    if(!items.length){
+      const vals = [`Day ${day}`, '－', '－', '無可觀課時段', ''];
+      vals.forEach((val, idx)=>{
+        const cell = ws.getCell(dr, idx+1);
+        cell.value = val;
+        cell.font = {name:'Arial', size:10, color:{argb:'FF999999'}};
+        cell.fill = fillSolid('FFFFFF');
+        cell.alignment = {horizontal:'center', vertical:'middle'};
+        cell.border = borderAll();
+      });
+      ws.getRow(dr).height = 18;
+      dr += 1;
+    } else {
+      const start = dr;
+      items.forEach((s, pi)=>{
+        const bg = pi % 2 === 0 ? XL_OBS_ROW : XL_OBS_ALT;
+        const vals = [pi===0 ? `Day ${day}` : '', `第 ${s.period} 節`, s.time, s.classInfo, ''];
+        vals.forEach((val, ci)=>{
+          const cell = ws.getCell(dr, ci+1);
+          cell.value = val;
+          cell.font = {name:'Arial', size:10};
+          cell.fill = fillSolid(ci===0 ? XL_OBS_ROW : bg);
+          cell.alignment = {horizontal:'center', vertical:'middle'};
+          cell.border = borderAll();
+        });
+        ws.getRow(dr).height = 18;
+        dr += 1;
+      });
+      if(items.length > 1){
+        ws.mergeCells(start, 1, dr-1, 1);
+        ws.getCell(start,1).alignment = {horizontal:'center', vertical:'middle'};
+      }
+    }
+  });
+  ws.views = [{state:'frozen', ySplit: hdr}];
+  await saveWorkbook(wb, `觀課安排_${observers.join('_')}_觀_${observed}.xlsx`);
+}
+
+/* ============================================================
+   App state & UI wiring
+   ============================================================ */
+let teachersData = {}, allNames = [];
+let cfSelected = [], cfLastResult = null;
+let obSelected = [], obLastResult = null;
+
+const fileInput = document.getElementById('fileInput');
+const dropzone = document.getElementById('dropzone');
+const fileStatus = document.getElementById('fileStatus');
+const mainCard = document.getElementById('mainCard');
+
+dropzone.addEventListener('click', ()=>fileInput.click());
+['dragover','dragenter'].forEach(ev=>dropzone.addEventListener(ev, e=>{e.preventDefault(); dropzone.classList.add('drag');}));
+['dragleave','drop'].forEach(ev=>dropzone.addEventListener(ev, e=>{e.preventDefault(); dropzone.classList.remove('drag');}));
+dropzone.addEventListener('drop', e=>{
+  if(e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', e=>{
+  if(e.target.files.length) handleFile(e.target.files[0]);
+});
+
+function handleFile(file){
+  fileStatus.textContent = "正在讀取「"+file.name+"」，請稍候…";
+  fileStatus.className = "file-status";
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, {type:'array'});
+      teachersData = parseWorkbook(wb);
+      allNames = Object.keys(teachersData).sort();
+      if(!allNames.length){
+        fileStatus.textContent = "讀取完成，但找不到任何符合格式的教師時間表。請確認檔案格式。";
+        fileStatus.className = "file-status";
+        return;
+      }
+      fileStatus.textContent = "✔ 已載入「"+file.name+"」— 共 "+allNames.length+" 位教師";
+      fileStatus.className = "file-status ok";
+      mainCard.style.display = "";
+      cfSelected = []; obSelected = [];
+      renderCfLists(); renderObLists();
+      const obSel = document.getElementById('obObserved');
+      obSel.innerHTML = '<option value="">請選擇</option>' + allNames.map(n=>`<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+    }catch(err){
+      fileStatus.textContent = "讀取失敗："+err.message;
+      fileStatus.className = "file-status";
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// ---- Tabs ----
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ---- Tab 1: Common free ----
+function renderCfLists(){
+  const kw = document.getElementById('cfSearch').value.toLowerCase();
+  const allBox = document.getElementById('cfAll');
+  const selBox = document.getElementById('cfSel');
+  allBox.innerHTML = allNames.filter(n=>!cfSelected.includes(n) && n.toLowerCase().includes(kw))
+    .map(n=>`<div class="item" data-name="${escapeHtml(n)}">${escapeHtml(n)}</div>`).join('');
+  selBox.innerHTML = cfSelected.map(n=>`<div class="item sel" data-name="${escapeHtml(n)}">${escapeHtml(n)}</div>`).join('');
+}
+document.getElementById('cfSearch').addEventListener('input', renderCfLists);
+document.getElementById('cfAll').addEventListener('click', e=>{
+  const el = e.target.closest('.item'); if(!el) return;
+  el.classList.toggle('sel');
+});
+document.getElementById('cfSel').addEventListener('click', e=>{
+  const el = e.target.closest('.item'); if(!el) return;
+  el.classList.toggle('sel');
+});
+document.getElementById('cfAdd').addEventListener('click', ()=>{
+  document.querySelectorAll('#cfAll .item.sel').forEach(el=>{
+    const n = el.dataset.name;
+    if(!cfSelected.includes(n)) cfSelected.push(n);
+  });
+  renderCfLists();
+});
+document.getElementById('cfRemove').addEventListener('click', ()=>{
+  const toRemove = [...document.querySelectorAll('#cfSel .item.sel')].map(el=>el.dataset.name);
+  cfSelected = cfSelected.filter(n=>!toRemove.includes(n));
+  renderCfLists();
+});
+document.getElementById('cfClear').addEventListener('click', ()=>{ cfSelected=[]; renderCfLists(); });
+
+document.getElementById('cfQuery').addEventListener('click', ()=>{
+  if(!cfSelected.length){ alert("請至少選取一位老師。"); return; }
+  const s6 = document.getElementById('cfS6').checked;
+  try{
+    const common = findCommonFree(teachersData, cfSelected, s6);
+    cfLastResult = {selected:[...cfSelected], common, s6};
+    showCfResult(cfLastResult);
+  }catch(err){ alert(err.message); }
+});
+
+function showCfResult(res){
+  document.getElementById('cfResultCard').hidden = false;
+  document.getElementById('cfMeta').innerHTML =
+    `<span>已選教師：<b>${res.selected.join('、')}</b></span>` +
+    `<span>包括中六：<b>${res.s6?'是':'否'}</b></span>` +
+    `<span>共同空堂：<b>${res.common.length} 節</b></span>`;
+  const byDay = {}; DAY_NUMS.forEach(d=>byDay[d]=[]);
+  res.common.forEach(s=>byDay[s.day].push(s));
+  document.getElementById('cfResults').innerHTML = DAY_NUMS.map(d=>{
+    const items = byDay[d];
+    const body = items.length
+      ? items.map(s=>`<div class="slot-row"><span>第 ${s.period} 節</span><span class="tag">${s.time}</span></div>`).join('')
+      : `<div class="empty-row">（無共同空堂）</div>`;
+    return `<div class="day-block"><div class="day-head">Day ${d}</div>${body}</div>`;
+  }).join('');
+}
+
+document.getElementById('cfExport').addEventListener('click', async ()=>{
+  if(!cfLastResult) return;
+  try{ await exportCommonExcel(cfLastResult); }
+  catch(err){ alert("匯出失敗："+err.message); }
+});
+
+// ---- Tab 2: Observation ----
+function renderObLists(){
+  const kw = document.getElementById('obSearch').value.toLowerCase();
+  const allBox = document.getElementById('obAll');
+  const selBox = document.getElementById('obSel');
+  allBox.innerHTML = allNames.filter(n=>!obSelected.includes(n) && n.toLowerCase().includes(kw))
+    .map(n=>`<div class="item" data-name="${escapeHtml(n)}">${escapeHtml(n)}</div>`).join('');
+  selBox.innerHTML = obSelected.map(n=>`<div class="item sel" data-name="${escapeHtml(n)}">${escapeHtml(n)}</div>`).join('');
+}
+document.getElementById('obSearch').addEventListener('input', renderObLists);
+document.getElementById('obAll').addEventListener('click', e=>{
+  const el = e.target.closest('.item'); if(!el) return;
+  el.classList.toggle('sel');
+});
+document.getElementById('obSel').addEventListener('click', e=>{
+  const el = e.target.closest('.item'); if(!el) return;
+  el.classList.toggle('sel');
+});
+document.getElementById('obAdd').addEventListener('click', ()=>{
+  document.querySelectorAll('#obAll .item.sel').forEach(el=>{
+    const n = el.dataset.name;
+    if(!obSelected.includes(n)) obSelected.push(n);
+  });
+  renderObLists();
+});
+document.getElementById('obRemove').addEventListener('click', ()=>{
+  const toRemove = [...document.querySelectorAll('#obSel .item.sel')].map(el=>el.dataset.name);
+  obSelected = obSelected.filter(n=>!toRemove.includes(n));
+  renderObLists();
+});
+document.getElementById('obClear').addEventListener('click', ()=>{ obSelected=[]; renderObLists(); });
+
+document.getElementById('obQuery').addEventListener('click', ()=>{
+  const observed = document.getElementById('obObserved').value;
+  if(!obSelected.length){ alert("請至少選取一位觀課老師。"); return; }
+  if(!observed){ alert("請選擇被觀課老師。"); return; }
+  if(obSelected.includes(observed)){ alert("被觀課老師不能同時為觀課老師。"); return; }
+  const s6 = document.getElementById('obS6').checked;
+  try{
+    const slots = findObservationSlots(teachersData, obSelected, observed, s6);
+    obLastResult = {observers:[...obSelected], observed, slots, s6};
+    showObResult(obLastResult);
+  }catch(err){ alert(err.message); }
+});
+
+function showObResult(res){
+  document.getElementById('obResultCard').hidden = false;
+  document.getElementById('obMeta').innerHTML =
+    `<span>觀課老師：<b>${res.observers.join('、')}</b></span>` +
+    `<span>被觀課老師：<b>${res.observed}</b></span>` +
+    `<span>包括中六：<b>${res.s6?'是':'否'}</b></span>` +
+    `<span>可觀課節數：<b>${res.slots.length} 節</b></span>`;
+  const byDay = {}; DAY_NUMS.forEach(d=>byDay[d]=[]);
+  res.slots.forEach(s=>byDay[s.day].push(s));
+  document.getElementById('obResults').innerHTML = DAY_NUMS.map(d=>{
+    const items = byDay[d];
+    const body = items.length
+      ? items.map(s=>`<div class="slot-row"><span>第 ${s.period} 節　${s.time}</span><span class="obs-tag">【${escapeHtml(s.classInfo)}】</span></div>`).join('')
+      : `<div class="empty-row">（無可觀課時段）</div>`;
+    return `<div class="day-block"><div class="day-head">Day ${d}</div>${body}</div>`;
+  }).join('');
+}
+
+document.getElementById('obExport').addEventListener('click', async ()=>{
+  if(!obLastResult) return;
+  try{ await exportObservationExcel(obLastResult); }
+  catch(err){ alert("匯出失敗："+err.message); }
+});
+</script>
+</body>
+</html>
