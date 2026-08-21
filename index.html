@@ -18,6 +18,7 @@
   --color-primary:#01696f; --color-primary-hover:#0c4e54; --color-primary-active:#0f3638; --color-primary-highlight:#cedcd8;
   --color-success:#437a22; --color-success-highlight:#d4dfcc;
   --color-purple:#7a39bb; --color-purple-highlight:#dacfde;
+  --color-red:#c0392b; --color-red-highlight:#f5cec8;
   --color-error:#a12c7b; --color-error-highlight:#e0ced7;
   --radius-sm:.375rem; --radius-md:.5rem; --radius-lg:.75rem; --radius-xl:1rem; --radius-full:9999px;
   --transition-interactive:180ms cubic-bezier(.16,1,.3,1);
@@ -31,6 +32,7 @@
   --color-primary:#4f98a3; --color-primary-hover:#227f8b; --color-primary-active:#1a626b; --color-primary-highlight:#313b3b;
   --color-success:#6daa45; --color-success-highlight:#3a4435;
   --color-purple:#a86fdf; --color-purple-highlight:#4e4652;
+  --color-red:#e0685a; --color-red-highlight:#4f3936;
   --color-error:#d163a7; --color-error-highlight:#4c3d46;
   --shadow-sm:0 1px 2px oklch(0 0 0/.2); --shadow-md:0 4px 12px oklch(0 0 0/.3); --shadow-lg:0 12px 32px oklch(0 0 0/.4);
 }
@@ -41,10 +43,14 @@ body{min-height:100dvh;line-height:1.6;font-family:'Noto Sans HK',sans-serif;fon
 :focus-visible{outline:2px solid var(--color-primary);outline-offset:2px;border-radius:var(--radius-sm)}
 button{font:inherit;cursor:pointer;background:none;border:none;color:inherit}
 input,select{font:inherit;color:inherit}
+a{color:inherit;text-decoration:none}
 
-.banner{background:linear-gradient(135deg,var(--color-primary-active),var(--color-primary));color:#fff;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shadow-md)}
+.banner{background:linear-gradient(135deg,var(--color-primary-active),var(--color-primary));color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shadow-md);flex-wrap:wrap;gap:10px}
 .banner h1{font-size:clamp(18px,3vw,24px);font-weight:900;display:flex;align-items:center;gap:10px}
-.theme-toggle{width:38px;height:38px;border-radius:var(--radius-full);background:oklch(1 0 0/.15);display:flex;align-items:center;justify-content:center;transition:background var(--transition-interactive)}
+.banner-actions{display:flex;align-items:center;gap:10px}
+.tutorial-link{display:flex;align-items:center;gap:6px;background:oklch(1 0 0/.15);padding:8px 14px;border-radius:var(--radius-full);font-size:13px;font-weight:700;transition:background var(--transition-interactive)}
+.tutorial-link:hover{background:oklch(1 0 0/.28)}
+.theme-toggle{width:38px;height:38px;border-radius:var(--radius-full);background:oklch(1 0 0/.15);display:flex;align-items:center;justify-content:center;transition:background var(--transition-interactive);flex-shrink:0}
 .theme-toggle:hover{background:oklch(1 0 0/.25)}
 
 .container{max-width:1080px;margin:0 auto;padding:24px 16px 64px}
@@ -59,7 +65,7 @@ input,select{font:inherit;color:inherit}
 .file-status{margin-top:12px;font-size:14px;color:var(--color-text-muted)}
 .file-status.ok{color:var(--color-success)}
 
-.tabs{display:flex;gap:4px;border-bottom:1px solid var(--color-divider);margin-bottom:18px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--color-divider);margin-bottom:18px;flex-wrap:wrap}
 .tab-btn{padding:10px 18px;font-weight:700;font-size:14px;color:var(--color-text-muted);border-bottom:2px solid transparent;transition:color var(--transition-interactive),border-color var(--transition-interactive)}
 .tab-btn.active{color:var(--color-primary);border-color:var(--color-primary)}
 .tab-panel{display:none}
@@ -89,6 +95,8 @@ input,select{font:inherit;color:inherit}
 .btn-primary:hover{background:var(--color-primary-hover)}
 .btn-purple{background:var(--color-purple);color:#fff}
 .btn-purple:hover{filter:brightness(.9)}
+.btn-red{background:var(--color-red);color:#fff}
+.btn-red:hover{filter:brightness(.9)}
 .btn-ghost{background:var(--color-surface-offset);color:var(--color-text);border:1px solid var(--color-border)}
 .btn-ghost:hover{background:var(--color-surface-offset-2)}
 .btn[disabled]{opacity:.5;cursor:not-allowed}
@@ -106,15 +114,32 @@ input,select{font:inherit;color:inherit}
 .footer-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
 .hint{font-size:12px;color:var(--color-text-faint);margin-top:8px}
-select.observed-select{width:100%;max-width:320px;padding:9px 12px;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface-2);font-size:14px}
+select.observed-select,select.slot-select{width:100%;max-width:320px;padding:9px 12px;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface-2);font-size:14px}
+
+.slot-columns{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:640px){.slot-columns{grid-template-columns:1fr}}
+.slot-panel{border:1px solid var(--color-divider);border-radius:var(--radius-md);overflow:hidden}
+.slot-panel-head{padding:10px 14px;font-weight:700;font-size:14px;color:#fff}
+.slot-panel-head.teach{background:var(--color-red)}
+.slot-panel-head.free{background:var(--color-success)}
+.slot-panel-body{padding:4px 0;max-height:340px;overflow-y:auto}
+.slot-item{display:flex;justify-content:space-between;gap:10px;padding:8px 14px;font-size:13px;border-top:1px solid var(--color-divider)}
+.slot-item .name{font-weight:700}
+.slot-item .info{color:var(--color-text-muted)}
 </style>
 </head>
 <body>
 <div class="banner">
   <h1>📅 教師課堂安排查詢系統（網頁版）</h1>
-  <button class="theme-toggle" id="themeToggle" aria-label="切換深色模式">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-  </button>
+  <div class="banner-actions">
+    <a class="tutorial-link" id="tutorialLink" href="./教師課堂安排查詢系統_使用教學.docx" download>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      下載使用教學
+    </a>
+    <button class="theme-toggle" id="themeToggle" aria-label="切換深色模式">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+    </button>
+  </div>
 </div>
 
 <div class="container">
@@ -128,6 +153,7 @@ select.observed-select{width:100%;max-width:320px;padding:9px 12px;border:1px so
         <input type="file" id="fileInput" accept=".xlsx,.xls" class="sr-only">
       </div>
       <div class="file-status" id="fileStatus">尚未選取檔案</div>
+      <p class="hint">首次使用？點右上角「下載使用教學」查看完整操作說明。</p>
     </div>
   </div>
 
@@ -135,6 +161,7 @@ select.observed-select{width:100%;max-width:320px;padding:9px 12px;border:1px so
     <div class="tabs">
       <button class="tab-btn active" data-tab="cf">📋 共同空堂查詢</button>
       <button class="tab-btn" data-tab="ob">👁 觀課安排</button>
+      <button class="tab-btn" data-tab="slot">🔎 特定課堂查詢</button>
     </div>
     <div class="card-body">
 
@@ -211,6 +238,47 @@ select.observed-select{width:100%;max-width:320px;padding:9px 12px;border:1px so
         </div>
       </div>
 
+      <!-- Tab: Specific lesson query -->
+      <div class="tab-panel" id="tab-slot">
+        <div class="list-label">Step 2 — 選擇要查詢的循環日及節次</div>
+        <div class="opts-row" style="margin-top:0">
+          <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center">
+            <div>
+              <div class="list-label">循環日</div>
+              <select class="slot-select" id="slotDay"></select>
+            </div>
+            <div>
+              <div class="list-label">節次</div>
+              <select class="slot-select" id="slotPeriod"></select>
+            </div>
+          </div>
+        </div>
+        <div class="opts-row">
+          <label class="checkbox-row"><input type="checkbox" id="slotS6" checked> 包括中六課堂（取消勾選＝中六課堂視作空堂）</label>
+          <button class="btn btn-red" id="slotQuery">🔎 查詢此課堂</button>
+        </div>
+        <p class="hint">系統會列出該時段所有老師的狀態：正在上課（附班別/科目）或空堂。</p>
+        <div class="card" style="margin-top:18px" id="slotResultCard" hidden>
+          <div class="card-header">查詢結果</div>
+          <div class="card-body">
+            <div class="result-meta" id="slotMeta"></div>
+            <div class="slot-columns">
+              <div class="slot-panel">
+                <div class="slot-panel-head teach">📖 正在上課</div>
+                <div class="slot-panel-body" id="slotTeachingList"></div>
+              </div>
+              <div class="slot-panel">
+                <div class="slot-panel-head free">🟢 空堂</div>
+                <div class="slot-panel-body" id="slotFreeList"></div>
+              </div>
+            </div>
+            <div class="footer-actions">
+              <button class="btn btn-ghost" id="slotExport">💾 匯出 Excel 報表</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -227,9 +295,6 @@ select.observed-select{width:100%;max-width:320px;padding:9px 12px;border:1px so
   });
 })();
 
-/* ============================================================
-   Core parsing logic — ported from the Python desktop version
-   ============================================================ */
 const PERIOD_TIMES = {1:"08:30-09:10",2:"09:10-09:50",3:"10:05-10:45",4:"10:45-11:25",
   5:"11:40-12:20",6:"12:20-13:00",7:"14:20-15:00",8:"15:00-15:40"};
 const ALL_TIME_KEYS = new Set(["08:00-08:30","08:30-09:10","09:10-09:50","09:50-10:05",
@@ -243,14 +308,16 @@ const DAY_EN_RE = /^([1-7])$/;
 const DAY_WORD_RE = /^Day\s*([1-7])$/i;
 const DAY_NUMS = [1,2,3,4,5,6,7];
 
-// Colours ported 1:1 from the Python desktop version (openpyxl hex codes)
 const XL_TITLE_BG = "1A3C5E";
 const XL_HEADER_BG = "2C7BE5";
 const XL_OBS_BG = "7D3C98";
+const XL_SLOT_BG = "C0392B";
 const XL_DAY_BG = "D6E4F7";
 const XL_ALT_BG = "EAF2FB";
 const XL_OBS_ROW = "F5EEF8";
 const XL_OBS_ALT = "EBD5F5";
+const XL_SLOT_ROW = "FDEDEC";
+const XL_SLOT_ALT = "FADBD8";
 const XL_BORDER = "AAAAAA";
 
 function norm(x){
@@ -380,12 +447,24 @@ function findObservationSlots(teachersData, observers, observed, includeS6){
   });
   return result.sort((a,b)=> a.day-b.day || a.period-b.period);
 }
+function findSlotStatus(teachersData, day, period, includeS6){
+  const timeLabel = PERIOD_TIMES[period];
+  const teaching = [];
+  const free = [];
+  Object.keys(teachersData).forEach(function(teacher){
+    const slots = teachersData[teacher];
+    const row = slots.find(s=>s.day===day && s.period===period);
+    if(!row) return;
+    const cell = row.cell;
+    const isFree = includeS6 ? (cell==="") : (cell==="" || isS6(cell));
+    if(isFree) free.push(teacher);
+    else teaching.push({teacher, classInfo:cell});
+  });
+  teaching.sort((a,b)=>a.teacher.localeCompare(b.teacher));
+  free.sort();
+  return {teaching, free, timeLabel};
+}
 
-/* ============================================================
-   Excel export — ExcelJS, styled to match the Python desktop
-   version's openpyxl output exactly (colours, fonts, borders,
-   merged cells, row heights, column widths, freeze panes).
-   ============================================================ */
 function argb(hex){ return "FF" + hex.toUpperCase(); }
 function borderAll(){
   const side = {style:'thin', color:{argb:argb(XL_BORDER)}};
@@ -408,7 +487,6 @@ async function exportCommonExcel(result){
   const {selected, common, s6} = result;
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet('共同空堂');
-
   ws.mergeCells('A1:D1');
   const title = ws.getCell('A1');
   title.value = '教師共同空堂分析報告';
@@ -416,7 +494,6 @@ async function exportCommonExcel(result){
   title.fill = fillSolid(XL_TITLE_BG);
   title.alignment = {horizontal:'center', vertical:'middle'};
   ws.getRow(1).height = 32;
-
   const meta = [
     ['已選教師', selected.join('、')],
     ['包括中六課堂', s6 ? '是' : '否'],
@@ -436,7 +513,6 @@ async function exportCommonExcel(result){
     });
     ws.getRow(i).height = 18;
   });
-
   const sep = meta.length + 2;
   ws.getRow(sep).height = 6;
   const hdr = sep + 1;
@@ -452,7 +528,6 @@ async function exportCommonExcel(result){
     ws.getColumn(ci).width = w;
   });
   ws.getRow(hdr).height = 24;
-
   let dr = hdr + 1;
   DAY_NUMS.forEach(day=>{
     const periods = common.filter(s=>s.day===day);
@@ -498,7 +573,6 @@ async function exportObservationExcel(result){
   const {observers, observed, slots, s6} = result;
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet('觀課安排');
-
   ws.mergeCells('A1:E1');
   const title = ws.getCell('A1');
   title.value = '校內觀課安排建議';
@@ -506,7 +580,6 @@ async function exportObservationExcel(result){
   title.fill = fillSolid(XL_OBS_BG);
   title.alignment = {horizontal:'center', vertical:'middle'};
   ws.getRow(1).height = 32;
-
   const meta = [
     ['觀課老師（空堂）', observers.join('、')],
     ['被觀課老師（上課）', observed],
@@ -527,7 +600,6 @@ async function exportObservationExcel(result){
     });
     ws.getRow(i).height = 18;
   });
-
   const sep = meta.length + 2;
   ws.getRow(sep).height = 6;
   const hdr = sep + 1;
@@ -543,7 +615,6 @@ async function exportObservationExcel(result){
     ws.getColumn(ci).width = w;
   });
   ws.getRow(hdr).height = 24;
-
   let dr = hdr + 1;
   DAY_NUMS.forEach(day=>{
     const items = slots.filter(s=>s.day===day);
@@ -585,17 +656,101 @@ async function exportObservationExcel(result){
   await saveWorkbook(wb, `觀課安排_${observers.join('_')}_觀_${observed}.xlsx`);
 }
 
-/* ============================================================
-   App state & UI wiring
-   ============================================================ */
+async function exportSlotExcel(result){
+  const {day, period, timeLabel, teaching, free, s6} = result;
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('特定課堂');
+  ws.mergeCells('A1:C1');
+  const title = ws.getCell('A1');
+  title.value = '特定課堂教師安排查詢';
+  title.font = {name:'Arial', size:14, bold:true, color:{argb:'FFFFFFFF'}};
+  title.fill = fillSolid(XL_SLOT_BG);
+  title.alignment = {horizontal:'center', vertical:'middle'};
+  ws.getRow(1).height = 32;
+  const meta = [
+    ['查詢時段', `Day ${day} － 第 ${period} 節（${timeLabel}）`],
+    ['包括中六課堂', s6 ? '是' : '否'],
+    ['正在上課教師數', `${teaching.length} 位`],
+    ['空堂教師數', `${free.length} 位`]
+  ];
+  meta.forEach(([k,v], idx)=>{
+    const i = idx + 2;
+    ws.mergeCells(`A${i}:A${i}`);
+    ws.mergeCells(`B${i}:C${i}`);
+    const kc = ws.getCell(`A${i}`), vc = ws.getCell(`B${i}`);
+    kc.value = k; vc.value = v;
+    [kc, vc].forEach((cell, ci)=>{
+      cell.font = {name:'Arial', size:10, bold: ci===0};
+      cell.fill = fillSolid(XL_SLOT_ALT);
+      cell.alignment = {horizontal:'left', vertical:'middle', wrapText:true};
+      cell.border = borderAll();
+    });
+    ws.getRow(i).height = 18;
+  });
+  const sep = meta.length + 2;
+  ws.getRow(sep).height = 6;
+  const hdr = sep + 1;
+  const headers = [['教師',16],['上課班別/科目',30],['狀態',12]];
+  headers.forEach(([h,w], idx)=>{
+    const ci = idx + 1;
+    const cell = ws.getCell(hdr, ci);
+    cell.value = h;
+    cell.font = {name:'Arial', size:11, bold:true, color:{argb:'FFFFFFFF'}};
+    cell.fill = fillSolid(XL_SLOT_BG);
+    cell.alignment = {horizontal:'center', vertical:'middle'};
+    cell.border = borderAll();
+    ws.getColumn(ci).width = w;
+  });
+  ws.getRow(hdr).height = 24;
+  let dr = hdr + 1;
+  teaching.forEach((t, i)=>{
+    const bg = i % 2 === 0 ? XL_SLOT_ROW : XL_SLOT_ALT;
+    const vals = [t.teacher, t.classInfo, '上課'];
+    vals.forEach((val, ci)=>{
+      const cell = ws.getCell(dr, ci+1);
+      cell.value = val;
+      cell.font = {name:'Arial', size:10};
+      cell.fill = fillSolid(bg);
+      cell.alignment = {horizontal:'center', vertical:'middle'};
+      cell.border = borderAll();
+    });
+    ws.getRow(dr).height = 18;
+    dr += 1;
+  });
+  free.forEach((teacher, i)=>{
+    const bg = i % 2 === 0 ? 'EAFAF1' : 'D5F5E3';
+    const vals = [teacher, '', '空堂'];
+    vals.forEach((val, ci)=>{
+      const cell = ws.getCell(dr, ci+1);
+      cell.value = val;
+      cell.font = {name:'Arial', size:10, bold: ci===2};
+      cell.fill = fillSolid(bg);
+      cell.alignment = {horizontal:'center', vertical:'middle'};
+      cell.border = borderAll();
+    });
+    ws.getRow(dr).height = 18;
+    dr += 1;
+  });
+  ws.views = [{state:'frozen', ySplit: hdr}];
+  await saveWorkbook(wb, `特定課堂查詢_Day${day}_第${period}節.xlsx`);
+}
+
 let teachersData = {}, allNames = [];
 let cfSelected = [], cfLastResult = null;
 let obSelected = [], obLastResult = null;
+let slotLastResult = null;
 
 const fileInput = document.getElementById('fileInput');
 const dropzone = document.getElementById('dropzone');
 const fileStatus = document.getElementById('fileStatus');
 const mainCard = document.getElementById('mainCard');
+
+(function(){
+  const daySel = document.getElementById('slotDay');
+  daySel.innerHTML = DAY_NUMS.map(d=>`<option value="${d}">Day ${d}</option>`).join('');
+  const periodSel = document.getElementById('slotPeriod');
+  periodSel.innerHTML = Object.keys(PERIOD_TIMES).map(p=>`<option value="${p}">第 ${p} 節（${PERIOD_TIMES[p]}）</option>`).join('');
+})();
 
 dropzone.addEventListener('click', ()=>fileInput.click());
 ['dragover','dragenter'].forEach(ev=>dropzone.addEventListener(ev, e=>{e.preventDefault(); dropzone.classList.add('drag');}));
@@ -639,7 +794,6 @@ function handleFile(file){
 
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
-// ---- Tabs ----
 document.querySelectorAll('.tab-btn').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
@@ -649,7 +803,6 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
   });
 });
 
-// ---- Tab 1: Common free ----
 function renderCfLists(){
   const kw = document.getElementById('cfSearch').value.toLowerCase();
   const allBox = document.getElementById('cfAll');
@@ -714,7 +867,6 @@ document.getElementById('cfExport').addEventListener('click', async ()=>{
   catch(err){ alert("匯出失敗："+err.message); }
 });
 
-// ---- Tab 2: Observation ----
 function renderObLists(){
   const kw = document.getElementById('obSearch').value.toLowerCase();
   const allBox = document.getElementById('obAll');
@@ -780,6 +932,41 @@ function showObResult(res){
 document.getElementById('obExport').addEventListener('click', async ()=>{
   if(!obLastResult) return;
   try{ await exportObservationExcel(obLastResult); }
+  catch(err){ alert("匯出失敗："+err.message); }
+});
+
+document.getElementById('slotQuery').addEventListener('click', ()=>{
+  if(!allNames.length){ alert("請先載入時間表檔案。"); return; }
+  const day = parseInt(document.getElementById('slotDay').value, 10);
+  const period = parseInt(document.getElementById('slotPeriod').value, 10);
+  const s6 = document.getElementById('slotS6').checked;
+  try{
+    const {teaching, free, timeLabel} = findSlotStatus(teachersData, day, period, s6);
+    slotLastResult = {day, period, timeLabel, teaching, free, s6};
+    showSlotResult(slotLastResult);
+  }catch(err){ alert(err.message); }
+});
+
+function showSlotResult(res){
+  document.getElementById('slotResultCard').hidden = false;
+  document.getElementById('slotMeta').innerHTML =
+    `<span>查詢時段：<b>Day ${res.day} － 第 ${res.period} 節（${res.timeLabel}）</b></span>` +
+    `<span>包括中六：<b>${res.s6?'是':'否'}</b></span>` +
+    `<span>正在上課：<b>${res.teaching.length} 位</b></span>` +
+    `<span>空堂：<b>${res.free.length} 位</b></span>`;
+  const teachBox = document.getElementById('slotTeachingList');
+  teachBox.innerHTML = res.teaching.length
+    ? res.teaching.map(t=>`<div class="slot-item"><span class="name">${escapeHtml(t.teacher)}</span><span class="info">${escapeHtml(t.classInfo)}</span></div>`).join('')
+    : `<div class="empty-row">（沒有老師在此時段上課）</div>`;
+  const freeBox = document.getElementById('slotFreeList');
+  freeBox.innerHTML = res.free.length
+    ? res.free.map(n=>`<div class="slot-item"><span class="name">${escapeHtml(n)}</span></div>`).join('')
+    : `<div class="empty-row">（沒有老師在此時段空堂）</div>`;
+}
+
+document.getElementById('slotExport').addEventListener('click', async ()=>{
+  if(!slotLastResult) return;
+  try{ await exportSlotExcel(slotLastResult); }
   catch(err){ alert("匯出失敗："+err.message); }
 });
 </script>
